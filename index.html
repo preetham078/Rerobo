@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#070a0f">
+  <title>HUMANOID MOTION LAB — Human → Robot Retargeting</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+<div class="app-shell">
+  <header class="topbar">
+    <div class="brand"><span class="brand-symbol">HM</span><div><strong>HUMANOID MOTION LAB</strong><small>REAL-TIME RETARGETING WORKSTATION</small></div></div>
+    <div class="system-state"><span class="status-dot"></span><span id="footer-status">SYSTEM READY</span></div>
+    <div class="top-actions">
+      <span class="clock" id="clock">--:--:--</span>
+      <button class="tool-btn" id="calibrate-button">CALIBRATE</button>
+      <button class="tool-btn record-button" id="record-button">● RECORD</button>
+      <button class="tool-btn" id="replay-button">REPLAY</button>
+    </div>
+  </header>
+
+  <main class="workbench">
+    <aside class="left-rail">
+      <section class="panel camera-card">
+        <div class="panel-head"><div><span class="kicker">01 / VISION</span><h2>CAMERA INPUT</h2></div><span class="pill" id="camera-tag">STANDBY</span></div>
+        <div class="camera-viewport" id="camera-viewport">
+          <video id="camera" autoplay playsinline muted></video>
+          <canvas id="landmarks"></canvas>
+          <div class="camera-grid"></div><div class="scanline"></div>
+          <div class="camera-placeholder" id="camera-placeholder"><b>CAMERA OFFLINE</b><span>Enable camera to begin tracking</span></div>
+          <div class="camera-state"><span class="status-dot"></span><span id="camera-state">INPUT STANDBY</span></div>
+          <div class="coordinate-readout" id="coordinate-readout">X --.-- · Y --.--</div>
+        </div>
+        <div class="camera-metrics">
+          <div><span>BODY</span><b id="hand-status">NOT DETECTED</b></div>
+          <div><span>POSE</span><b id="tracking-status">STANDBY</b></div>
+          <div><span>FPS</span><b id="fps">--</b></div>
+        </div>
+        <button id="camera-toggle" class="primary-btn" aria-pressed="false"><span class="camera-toggle-dot"></span><span id="camera-toggle-label">CAMERA ON</span></button>
+      </section>
+
+      <section class="panel controls-card">
+        <div class="panel-head"><div><span class="kicker">02 / CONTROL</span><h2>SESSION</h2></div></div>
+        <div class="control-grid">
+          <button class="view-btn" data-view="front">FRONT</button>
+          <button class="view-btn" data-view="side">SIDE</button>
+          <button class="view-btn" data-view="rear">REAR</button>
+          <button class="view-btn" data-view="top">TOP</button>
+          <button class="view-btn wide" id="reset-view">RESET VIEW</button>
+        </div>
+        <label class="switch-row"><span>LANDMARK OVERLAY</span><input id="landmark-toggle" type="checkbox" checked><i></i></label>
+        <label class="switch-row"><span>DEBUG / RESEARCH MODE</span><input id="debug-toggle" type="checkbox"><i></i></label>
+        <p class="calibration-status" id="calibration-status">CALIBRATION: NOT STARTED</p>
+      </section>
+    </aside>
+
+    <section class="panel robot-card">
+      <div class="panel-head robot-head">
+        <div><span class="kicker">03 / RETARGETING</span><h2>HUMANOID OUTPUT</h2></div>
+        <div class="robot-status"><span>IK</span><b>ACTIVE</b><span>FILTER</span><b>EMA</b></div>
+      </div>
+      <div class="scene-viewport" id="scene">
+        <div class="scene-grid"></div>
+        <div class="scene-top-label">LIVE HUMANOID / RETARGETED SKELETON</div>
+        <div class="scene-bottom-label"><span id="scene-tag">INTERACTION IDLE</span><span id="scene-coords">ROOT X -- · Y -- · Z --</span></div>
+        <div class="object-hud" id="object-hud"><span>●</span><b id="object-hud-label">MIRROR MODE READY</b></div>
+        <div class="scene-loading" id="scene-loading"><span></span>INITIALIZING 3D ENGINE</div>
+        <div class="scene-error" id="scene-error" hidden></div>
+      </div>
+      <div class="robot-footer">
+        <div><span>SUBJECT</span><b id="gesture-name">WAITING</b></div>
+        <div><span>MODE</span><b id="interaction-state">MIRROR READY</b></div>
+        <div><span>MAPPING</span><b id="confirm-state">AWAITING POSE</b></div>
+      </div>
+    </section>
+
+    <aside class="right-rail">
+      <section class="panel activity-card">
+        <div class="panel-head"><div><span class="kicker">04 / CLASSIFIER</span><h2>ACTIVITY</h2></div><span class="ai-badge">REAL TIME</span></div>
+        <div class="activity-main"><span class="activity-glyph" id="gesture-icon">◎</span><div><small>DETECTED STATE</small><strong id="gesture-card-name">AWAITING SUBJECT</strong></div></div>
+        <div class="confidence"><div><span>CONFIDENCE</span><b id="confidence">—</b></div><div class="confidence-track"><i id="confidence-bar"></i></div></div>
+        <div class="capture-grid"><div><span>FRAMES</span><b id="capture-frames">0</b></div><div><span>DURATION</span><b id="capture-duration">00:00</b></div></div>
+      </section>
+
+      <section class="panel telemetry-card">
+        <div class="panel-head"><div><span class="kicker">05 / TELEMETRY</span><h2>JOINT STREAM</h2></div><span class="pill">LIVE</span></div>
+        <div class="telemetry-grid">
+          <div><span>HEAD YAW</span><b id="tele-head-yaw">--°</b></div><div><span>HEAD PITCH</span><b id="tele-head-pitch">--°</b></div>
+          <div><span>L ARM</span><b id="tele-l-arm">--°</b></div><div><span>R ARM</span><b id="tele-r-arm">--°</b></div>
+          <div><span>L ELBOW</span><b id="tele-l-elbow">--°</b></div><div><span>R ELBOW</span><b id="tele-r-elbow">--°</b></div>
+          <div><span>L KNEE</span><b id="tele-l-knee">--°</b></div><div><span>R KNEE</span><b id="tele-r-knee">--°</b></div>
+        </div>
+        <div class="root-readout"><span>ROOT TRANSFORM</span><b id="tele-root">X 0.00 · Y 0.00 · Z 0.00</b></div>
+      </section>
+
+      <section class="panel debug-card" id="debug-panel" hidden>
+        <div class="panel-head"><div><span class="kicker">06 / RESEARCH</span><h2>DEBUG DATA</h2></div></div>
+        <pre id="debug-output">Debug mode disabled.</pre>
+      </section>
+    </aside>
+  </main>
+
+  <section class="bottom-workspace">
+    <section class="panel timeline-card">
+      <div class="panel-head"><div><span class="kicker">07 / TEMPORAL</span><h2>MOTION TIMELINE</h2></div><span class="pill">EVENT STREAM</span></div>
+      <div class="timeline-track"><div id="timeline-progress"></div></div>
+      <input id="replay-scrubber" type="range" min="0" max="1000" value="0" aria-label="Replay timeline">
+      <div class="timeline-events" id="activity-list"><div><time>--:--:--</time><span>Waiting for a body pose</span></div></div>
+    </section>
+    <section class="panel session-card">
+      <div class="panel-head"><div><span class="kicker">08 / DATA</span><h2>CAPTURE</h2></div></div>
+      <button id="export-recording" class="secondary-btn">EXPORT MOTION JSON</button>
+      <p>Recorded data contains timestamps, landmarks, activity state, robot joint rotations and root transform. Camera processing remains local to this browser.</p>
+      <div class="data-note">DEPTH NOTE · MediaPipe webcam depth is relative. This workstation does not invent metric distance.</div>
+    </section>
+  </section>
+
+  <footer class="footer"><span>MEDIAPIPE POSE + HANDS + FACE</span><span>THREE.JS HUMANOID RETARGETER</span><span>BUILD 03.00</span></footer>
+</div>
+
+<div class="start-screen" id="start-screen">
+  <div class="start-card">
+    <span class="kicker">HUMANOID MOTION LAB / INITIALIZE</span>
+    <div class="start-mark">HM</div>
+    <h1>HUMAN <span>→</span><br>HUMANOID</h1>
+    <p>Real-time body motion capture, joint-angle retargeting and interactive 3D robot visualization.</p>
+    <button id="start-button" class="start-button"><span>START MOTION CAPTURE</span><span>↗</span></button>
+    <div class="privacy">CAMERA PROCESSING · LOCAL BROWSER SESSION</div>
+    <p class="start-error" id="start-error" hidden></p>
+  </div>
+</div>
+<script type="module" src="./script.js"></script>
+</body>
+</html>
