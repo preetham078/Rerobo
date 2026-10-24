@@ -10,7 +10,7 @@ The project combines real-time pose tracking, hand tracking, 3D visualization, a
 
 ⸻
 
-🌐 Live Demo
+🌐 Live Demo : https://preetham078.github.io/Rerobo/
 
 🚀 Try AI Motion Mirror
 
